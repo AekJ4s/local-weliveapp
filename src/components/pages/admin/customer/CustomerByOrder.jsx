@@ -16,17 +16,21 @@ import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
 import Editor from './Editer'
 import Quill from 'quill'
+import { GiConfirmed } from 'react-icons/gi'
+import { MdFileUpload } from 'react-icons/md'
+import { red } from '@mui/material/colors'
 export default function CustomerByOrder() {
-  const Delta = Quill.import('delta');
-  const [range, setRange] = useState();
+  const Delta = Quill.import('delta')
+  const [range, setRange] = useState()
   let { user } = useSelector((store) => store.user)
-  console.log("USER : ", user)
+  console.log('USER : ', user)
   const dispatch = useDispatch()
-  const [lastChange, setLastChange] = useState();
-  const [readOnly, setReadOnly] = useState(false);
-  const quillRef = useRef();
+  const [lastChange, setLastChange] = useState()
+  const [readOnly, setReadOnly] = useState(false)
+  const quillRef = useRef()
   const { id } = useParams()
-  const [image, setImage] = useState(new Delta().insert(''));
+  const [image, setImage] = useState(new Delta().insert(''))
+
   const [orders, setOrders] = useState({
     data: { name: 'loading', orders: [] },
   })
@@ -39,6 +43,8 @@ export default function CustomerByOrder() {
           Authorization: `Bearer ${token}`,
         },
       })
+      console.log('incoming id', id)
+
       console.log('oo', response.data)
       setOrders({ data: response.data })
       setFormData(response.data)
@@ -54,7 +60,7 @@ export default function CustomerByOrder() {
     }
   }, [token, id])
 
-  console.log('1.', orders, "DATE ORDER : ", orders)
+  console.log('1.', orders, 'DATE ORDER : ', orders)
 
   const calculateTotalQuantity = () => {
     return orders.data.orders.reduce(
@@ -96,11 +102,14 @@ export default function CustomerByOrder() {
   }
 
   const handleSubmit = async (e) => {
-    console.log(orders)
-    console.log(formData)
+    console.log('Orders', orders)
+    console.log('FormData ', formData)
     e.preventDefault()
     const formDataToSend = new FormData()
-    formDataToSend.append('picture_payment', JSON.stringify(quillRef.current?.getContents()))
+    formDataToSend.append(
+      'picture_payment',
+      JSON.stringify(quillRef.current?.getContents())
+    )
     formDataToSend.append('name', formData.name)
     formDataToSend.append('address', formData.address)
     formDataToSend.append('sub_district', formData.sub_district)
@@ -127,10 +136,7 @@ export default function CustomerByOrder() {
     } catch (error) {
       console.error('There was an error!', error)
     }
-    
   }
-
-  const buffer = orders
 
   let dt = new Date(Date.parse(orders.data.date_added))
   const a = (month) => {
@@ -139,11 +145,26 @@ export default function CustomerByOrder() {
   }
   let df =
     '' + dt.getFullYear() + '-' + a(dt.getMonth() + 1) + '-' + dt.getDate()
-  console.log(df)
+  console.log('this df ==>', df)
 
-  function OrderForm({ order, handleChange, handleSubmit, handleImageChange, buffer, orders, df, formData }) {
-    const isDisabled = order.complete;
+  const completeSaleOrder = async (id) => {
+    try {
+      const response = await axios.post(
+        `${baseURL}/api/sale-order/complete/${id}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+      console.log('Response:', response.data)
+      // คุณสามารถเพิ่มการจัดการผลลัพธ์หรือการแจ้งเตือนได้ที่นี่
+    } catch (error) {
+      console.error('There was an error!', error)
+    }
   }
+
   return (
     <div className="container position-relative mt-3 mx-auto">
       <h3 className="text-start mb-3">
@@ -237,13 +258,7 @@ export default function CustomerByOrder() {
           <br />
           --------------------------------------------
           <br />
-          🙏 รบกวนขอความกรุณาลูกค้า 💢 โอนยอดบิลต่อบิลนะคะ
-          แล้วค่อยเอฟใหม่ได้คะ💢
-          <br /> 💢หากมียอดค้างหักลบยอดเอง โอนได้เลยคะ
-          รบกวนแนบรูปยอดค้างไว้ได้เลยคะ ขอบคุณมากค่ะ🙏
-          <br /> 🙏 ถ้าสินค้ามีตำหนิกรุณารีบแจ้ง รับเปลี่ยน
-          หรือคืนสินค้ามีตำหนิจากร้าน ส่งผิดสีผิดแบบ ผิดไซส์ เท่านั้นคะ
-          ขอบพระคุณมากคะ🙏
+          🙏 ขอบพระคุณมากครับ 🙏
           <br />
           <br />
         </div>
@@ -263,7 +278,7 @@ export default function CustomerByOrder() {
                       fullWidth
                       type="date"
                       name="date_added"
-                      defaultValue={formData.date_added}
+                      defaultValue={df}
                       onChange={handleChange}
                       required
                     />
@@ -328,6 +343,14 @@ export default function CustomerByOrder() {
                     />
                   </Grid>
                   <Grid item xs={12}>
+                    <Editor
+                      ref={quillRef}
+                      readOnly={readOnly}
+                      // JSON.parse(orders.data.picture_payment)
+                      onSelectionChange={setRange}
+                      onTextChange={setLastChange}
+                      defaultValue={image}
+                    />
                     <input
                       accept="image/*"
                       style={{ display: 'none' }}
@@ -361,7 +384,7 @@ export default function CustomerByOrder() {
       ) : (
         <>
           <p hidden>{orders.data.address}</p>
-          <div className="mt-4">
+          <div className="mt-3 content-center text-center justify-content-center">
             <Paper elevation={3} className="p-4">
               <Typography variant="h6" gutterBottom>
                 แบบฟอร์มสำหรับกรอกข้อมูล
@@ -374,83 +397,53 @@ export default function CustomerByOrder() {
                       fullWidth
                       type="date"
                       name="date_added"
-                      defaultValue={df}
+                      defaultValue={formData.date_added}
                       onChange={handleChange}
                       required
+                      disabled={orders.data.complete}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      name="address"
+                      defaultValue={formData.address}
+                      onChange={handleChange}
+                      required
+                      disabled={orders.data.complete}
                     />
                   </Grid>
                   <Grid item xs={4}>
-                    {buffer.data.address != null ? (
-                      <>
-                        <TextField
-                          label="ชื่อ-นามสกุล"
-                          fullWidth
-                          name="name"
-                          defaultValue={'' + orders.data.name}
-                          onChange={handleChange}
-                          required
-                        />
-                      </>
-                    ) : (
-                      <></>
-                    )}
-                  </Grid>
-                  <Grid item xs={8}>
-                    {buffer.data.address != null ? (
-                      <>
-                        <TextField
-                          fullWidth
-                          name="address"
-                          defaultValue={buffer.data.address}
-                          onChange={handleChange}
-                          required
-                        />
-                      </>
-                    ) : (
-                      <></>
-                    )}
+                    <TextField
+                      label="ตำบล"
+                      fullWidth
+                      name="district"
+                      defaultValue={formData.district}
+                      onChange={handleChange}
+                      required
+                      disabled={orders.data.complete}
+                    />
                   </Grid>
                   <Grid item xs={4}>
-                    {buffer.data.address != null ? (
-                      <>
-                        <TextField
-                          label="ตำบล"
-                          fullWidth
-                          name="district"
-                          defaultValue={'' + orders.data.district}
-                          onChange={handleChange}
-                          required
-                        />
-                      </>
-                    ) : (
-                      <></>
-                    )}
-                  </Grid>
-
-                  <Grid item xs={4}>
-                    {buffer.data.address != null ? (
-                      <>
-                        <TextField
-                          label="อำเภอ"
-                          fullWidth
-                          name="sub_area"
-                          defaultValue={'' + orders.data.sub_area}
-                          onChange={handleChange}
-                          required
-                        />
-                      </>
-                    ) : (
-                      <></>
-                    )}
+                    <TextField
+                      label="อำเภอ"
+                      fullWidth
+                      name="sub_area"
+                      defaultValue={formData.sub_area}
+                      onChange={handleChange}
+                      required
+                      disabled={orders.data.complete}
+                    />
                   </Grid>
                   <Grid item xs={4}>
                     <TextField
                       label="จังหวัด"
                       fullWidth
                       name="sub_district"
-                      defaultValue={'' + orders.data.sub_district}
+                      defaultValue={formData.sub_district}
                       onChange={handleChange}
                       required
+                      disabled={orders.data.complete}
                     />
                   </Grid>
                   <Grid item xs={6}>
@@ -458,9 +451,10 @@ export default function CustomerByOrder() {
                       label="รหัสไปรษณีย์"
                       fullWidth
                       name="postcode"
-                      defaultValue={'' + orders.data.postcode}
+                      defaultValue={formData.postcode}
                       onChange={handleChange}
                       required
+                      disabled={orders.data.complete}
                     />
                   </Grid>
                   <Grid item xs={6}>
@@ -468,9 +462,10 @@ export default function CustomerByOrder() {
                       label="เบอร์โทรศัพท์"
                       fullWidth
                       name="tel"
-                      defaultValue={'' + orders.data.tel}
+                      defaultValue={formData.tel}
                       onChange={handleChange}
                       required
+                      disabled={orders.data.complete}
                     />
                   </Grid>
                   <Grid item xs={12}>
@@ -483,40 +478,49 @@ export default function CustomerByOrder() {
                       defaultValue={image}
                     />
                   </Grid>
-                  {user.role == "admin" && <>
-                    <Grid item xs={12}>
-                      <TextField
-                        label="expressID"
-                        fullWidth
-                        name="expressID"
-                        defaultValue={'' + orders.data.tel}
-                        onChange={handleChange}
-                        required
-                      />
-                    </Grid>
-
-                    <Grid item xs={4}>
-                      <Button type="submit" variant="contained" color="primary">
-                        ส่งแบบฟอร์มชำระเงิน
-                      </Button>
-                    </Grid>
-                    <Grid item xs={4}>
-                      <Button type="button" variant="contained" color="warning">
-                        ยืนยันการชำระเงิน
-                      </Button>
-                    </Grid>
-                  </>}
-
+                  {orders.data.complete == false ? (
+                    <>
+                      <Grid item xs={12}>
+                        <Button
+                          type="submit"
+                          variant="contained"
+                          color="success"
+                        >
+                          ยืนยันการชำระเงิน
+                        </Button>
+                      </Grid>
+                    </>
+                  ) : (
+                    <>
+                      <Grid item xs={6}>
+                        <Button
+                          type="button"
+                          variant="contained"
+                          color="error"
+                          onClick={() => completeSaleOrder(id)}
+                        >
+                          ปฎิเสธการชำระเงิน
+                        </Button>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Button
+                          type="button"
+                          variant="contained"
+                          color="warning"
+                          onClick={() => completeSaleOrder(id)}
+                        >
+                          ยืนยันการส่งสินค้า
+                        </Button>
+                      </Grid>
+                    </>
+                  )}
                 </Grid>
               </form>
             </Paper>
           </div>
-          <div>
-
-          </div>
+          <div></div>
         </>
       )}
     </div>
-
   )
 }
